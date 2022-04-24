@@ -28,13 +28,15 @@ class Game:
         self.size = 10
 
         # all the tiles
-        self.tiles_alive: list[Tile] = [Tile(self, (0, 0), self.size), Tile(self, (1, 1), self.size),
-                                        Tile(self, (-2, 1), self.size)]
+        self.tiles_alive: list[Tile] = []
+        self.pos_alive = []
         self.neighbours = []
+        self.pos_neighbours = []
         for tile in self.tiles_alive:
             for i in range(6):
-                if not (neighbour := Tile(self, (self.get_neighbours(tile.pos)[i]), self.size)) in (self.neighbours or self.tiles_alive):
-                    self.neighbours.append(neighbour)
+                if not (neighbour := self.get_neighbours(tile.pos)[i]) in (self.pos_neighbours or self.pos_alive):
+                    self.neighbours.append(Tile(self, neighbour, self.size))
+                    self.pos_neighbours.append(neighbour)
         self.dragging = False
 
     def draw_hexagon(self, pos: tuple[int, int], color: tuple[int, int, int] = (0, 0, 0)):
@@ -48,6 +50,7 @@ class Game:
         if event.type == pg.MOUSEBUTTONUP:
             if event.button == 3:
                 self.tiles_alive.append(Tile(self, self.coordinates_to_hexagon(event.pos), self.size))
+                self.pos_alive.append(self.coordinates_to_hexagon(event.pos))
                 self.update_neighbours()
             elif event.button == 5:
                 if self.scale > 1:
@@ -65,8 +68,6 @@ class Game:
                 self.next_generation()
                 self.update_neighbours()
 
-
-
     def distance(self, x: tuple[float, float], y: tuple[int, int]):
         return (y[0] - x[0]) ** 2 + (y[1] - x[1]) ** 2
 
@@ -75,11 +76,12 @@ class Game:
         searching = True
         while searching:
             searching = False
-            print(p0)
-            d = self.distance(((p0[1] * self.size * sqrt(3) / 2 * self.scale, -(p0[0] + p0[1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
+            d = self.distance(((p0[1] * self.size * sqrt(3) / 2 * self.scale,
+                                -(p0[0] + p0[1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
             p = self.get_neighbours(p0)
             for i in range(6):
-                d1 = self.distance(((p[i][1] * self.size * sqrt(3) / 2 * self.scale, -(p[i][0] + p[i][1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
+                d1 = self.distance(((p[i][1] * self.size * sqrt(3) / 2 * self.scale,
+                                     -(p[i][0] + p[i][1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
                 if d1 == d:
                     break
                 elif d1 < d:
@@ -87,43 +89,37 @@ class Game:
                     d = d1
                     p0 = p[i]
                     break
-        print(d)
-        return p0[0]+1, p0[1]
+        return p0[0] + 1, p0[1]
 
     def update_neighbours(self):
         self.neighbours = []
-        pos_alive = [tile.pos for tile in self.tiles_alive]
-        pos_neighbour = []
-        for tile in self.tiles_alive:
+        self.pos_neighbours = []
+        for tile in self.pos_alive:
+            new_neighbour = self.get_neighbours(tile)
             for i in range(6):
-                new_neighbour = Tile(self, (self.get_neighbours(tile.pos)[i]), self.size)
-                if new_neighbour.pos not in pos_alive and new_neighbour.pos not in pos_neighbour:
-                    pos_neighbour.append(new_neighbour.pos)
-                    self.neighbours.append(new_neighbour)
+                if new_neighbour[i] not in (self.pos_alive or self.pos_neighbours):
+                    self.pos_neighbours.append(new_neighbour[i])
+                    self.neighbours.append(Tile(self, new_neighbour[i], self.size))
+        print(len(self.pos_neighbours), len(self.neighbours))
 
     def number_of_neighbours(self, pos: tuple[int, int]):
-        all_tiles_pos = [tile.pos for tile in self.tiles_alive]
         neighbours = self.get_neighbours(pos)
-        return sum([neighbours[i] in all_tiles_pos for i in range(6)])
+        return sum([neighbours[i] in self.pos_alive for i in range(6)])
 
     def next_generation(self):
+        T = True
         current_generation = copy(self.tiles_alive)
+        current_generation_pos = copy(self.pos_alive)
+        self.pos_alive = []
+        self.tiles_alive = []
         for tile in self.tiles_alive:
             for i in range(0, 6):
                 if self.number_of_neighbours(tile.pos) == 1:
                     pass
         for tile in self.neighbours:
-            T = True
-            if self.number_of_neighbours(tile.pos) == 3:
-                for i in range(len(self.tiles_alive)):
-                    if tile.pos == self.tiles_alive[i].pos:
-                        T = False
-            if T:
+            if self.number_of_neighbours(tile.pos) == 1:
+                self.pos_alive.append(tile.pos)
                 self.tiles_alive.append(tile)
-                T = True
-
-        for former_tile in current_generation:
-            self.tiles_alive.remove(former_tile)
 
         self.gen += 1
         print(len(self.tiles_alive), "generation :", self.gen)
