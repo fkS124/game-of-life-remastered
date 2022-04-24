@@ -18,7 +18,7 @@ class Game:
     ]
 
     N_STAY_ALIVE = 3
-    N_DIE = 5
+    N_DIE = 6
     N_BIRTH = 2
 
     def __init__(self, screen: pg.Surface):
@@ -152,6 +152,15 @@ class Game:
             if new_coordinates not in self.pos_alive:
                 self.tiles_alive.append(Tile(self, new_coordinates))
                 self.pos_alive.append(new_coordinates)
+                self.update_neighbours()
+        if pg.mouse.get_pressed()[1]:
+            new_coordinates = self.coordinates_to_hexagon(pg.mouse.get_pos())
+            if new_coordinates in self.pos_alive:
+                for tile in self.tiles_alive:
+                    if tile.pos == new_coordinates:
+                        self.tiles_alive.remove(tile)
+                        break
+                self.pos_alive.remove(new_coordinates)
                 self.update_neighbours()
 
         for tile in self.tiles_alive:
