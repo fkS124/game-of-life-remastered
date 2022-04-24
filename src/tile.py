@@ -20,28 +20,26 @@ class Tile:
 
     ]
 
-    def __init__(self, game_instance, pos: tuple[int, int], size: int):
+    def __init__(self, game_instance, pos: tuple[int, int]):
 
         self.game_instance = game_instance
 
         self.pos = pos  # coordinates of the highest vertex
-        self.size = size
         self.alive_list = [(0, 0)]
 
         # self.COLOR = (randint(0, 255), randint(0, 255), randint(0, 255))
 
     def draw(self, d_pos, scale: int = 1):
-        actual_pos = (self.pos[1]*self.size*sqrt(3)/2*scale, -(self.pos[0]+self.pos[1]*0.5)*self.size*scale) + d_pos
-        vertexes = [actual_pos + translation * scale * self.size for translation in self.vertexes_translation]
+        actual_pos = Vector2(self.pos[1]*sqrt(3)/2*scale, -(self.pos[0]+self.pos[1]*0.5)*scale) + Vector2(d_pos)
+        vertexes = [actual_pos + translation * scale for translation in self.vertexes_translation]
         vertexes.insert(0, actual_pos)
         filled_polygon(self.game_instance.screen, vertexes, self.COLOR)  # draw the polygon
 
     def next_step(self) -> bool:
-        all_tiles = self.game_instance.tiles
-
-        # get the neighbouring tiles from the tile list
-
-        # if next generation = alive return True
-        # else return False
-
-        return True
+        n_neighbours = self.game_instance.number_of_neighbours(self.pos)
+        if n_neighbours < self.game_instance.N_STAY_ALIVE:
+            return False
+        elif self.game_instance.N_STAY_ALIVE <= n_neighbours < self.game_instance.N_DIE:
+            return True
+        else:
+            return False
