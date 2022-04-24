@@ -47,8 +47,8 @@ class Game:
     def handle_events(self, event):
         if event.type == pg.MOUSEBUTTONUP:
             if event.button == 3:
-                pass
-                # add tile here
+                self.tiles_alive.append(Tile(self, self.coordinates_to_hexagon(event.pos), self.size))
+                self.update_neighbours()
             elif event.button == 5:
                 if self.scale > 1:
                     self.scale -= 1
@@ -64,6 +64,31 @@ class Game:
             if event.key == 13:
                 self.next_generation()
                 self.update_neighbours()
+
+
+
+    def distance(self, x: tuple[float, float], y: tuple[int, int]):
+        return (y[0] - x[0]) ** 2 + (y[1] - x[1]) ** 2
+
+    def coordinates_to_hexagon(self, pos: tuple[int, int]):
+        p0 = (-1, 0)
+        searching = True
+        while searching:
+            searching = False
+            print(p0)
+            d = self.distance(((p0[1] * self.size * sqrt(3) / 2 * self.scale, -(p0[0] + p0[1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
+            p = self.get_neighbours(p0)
+            for i in range(6):
+                d1 = self.distance(((p[i][1] * self.size * sqrt(3) / 2 * self.scale, -(p[i][0] + p[i][1] * 0.5) * self.size * self.scale) + self.d_pos), pos)
+                if d1 == d:
+                    break
+                elif d1 < d:
+                    searching = True
+                    d = d1
+                    p0 = p[i]
+                    break
+        print(d)
+        return p0[0]+1, p0[1]
 
     def update_neighbours(self):
         self.neighbours = []
@@ -82,7 +107,6 @@ class Game:
         return sum([neighbours[i] in all_tiles_pos for i in range(6)])
 
     def next_generation(self):
-
         current_generation = copy(self.tiles_alive)
         for tile in self.tiles_alive:
             for i in range(0, 6):
@@ -94,7 +118,6 @@ class Game:
                 for i in range(len(self.tiles_alive)):
                     if tile.pos == self.tiles_alive[i].pos:
                         T = False
-                        print('AEWRHWSRTN')
             if T:
                 self.tiles_alive.append(tile)
                 T = True
